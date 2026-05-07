@@ -21,6 +21,8 @@ public class MasterMind {
 
     public static int[] getSimilarity(String guess, String otherPos){
         int n = guess.length();
+        //the guess bool assures that each characters are not counted twice if there are duplicates true means counted and false not counted
+        //the other bool is for the correctivity of each characters, true means correct color and correct place and false means not equals with the guess at the same position
         boolean[] guessBool = new boolean[n];
         boolean[] otherBool = new boolean[n];
         int correct = 0;
@@ -35,6 +37,7 @@ public class MasterMind {
         for(int i=0; i<n; i++){
             if(!otherBool[i]){
                 for(int j=0; j<n; j++){
+                    //we check if the guessBool[i] is not counted yet and their equals that means the j element is at the wrong position
                     if(!guessBool[j] && guess.charAt(j) == otherPos.charAt(i)){
                         guessBool[j]=true;
                         wrongPosition++;
