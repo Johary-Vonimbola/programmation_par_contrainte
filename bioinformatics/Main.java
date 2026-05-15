@@ -8,6 +8,7 @@ import javax.swing.SwingUtilities;
 import bioinformatics.lot1.CUtil;
 import bioinformatics.lot1.Kmers;
 import bioinformatics.lot1.UI;
+import bioinformatics.lot2.AlignmentUI;
 
 public class Main {
     
@@ -24,11 +25,20 @@ public class Main {
         }
         System.out.println("Total "+kmers.size());
 
+        // SwingUtilities.invokeLater(() -> {
+        //     JFrame f = new JFrame("K-mers histograme");
+        //     f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        //     f.setSize(800, 500);
+        //     f.add(new UI(kmers));
+        //     f.setLocationRelativeTo(null);
+        //     f.setVisible(true);
+        // });
+
         SwingUtilities.invokeLater(() -> {
-            JFrame f = new JFrame("K-mers histograme");
+            JFrame f = new JFrame("Analyse de chevauchement");
             f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            f.setSize(700, 500);
-            f.add(new UI(kmers));
+            f.setSize(800, 500);
+            f.add(new AlignmentUI());
             f.setLocationRelativeTo(null);
             f.setVisible(true);
         });
