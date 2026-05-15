@@ -1,5 +1,6 @@
 package bioinformatics.lot1;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class FastaData {
@@ -32,6 +33,13 @@ public class FastaData {
      * @return
      */
     public List<Kmers> generateKmers(int k){
-        return null;
+        List<Kmers> kmers = new ArrayList<>();
+        int start = 0, end = k-1;
+        while(end < this.getSequence().length()){
+            kmers.add(new Kmers(this.getSequence().substring(start, end+1), 1));
+            start++;
+            end++;
+        }
+        return kmers;
     }
 }

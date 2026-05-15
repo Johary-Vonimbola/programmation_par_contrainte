@@ -45,16 +45,23 @@ public class FastqData {
      */
     public int calculateQuality(String qualitySequence){
         int quality = 0;
-        return quality;
+        for(int i=0; i<this.getSequence().length(); i++){
+            char c = this.getSequence().charAt(i);
+            int index = qualitySequence.indexOf(c+"");
+            quality += index;
+        }
+        return quality / this.getSequence().length();
     }
 
     /**
      * @implSpec calculate the quality and filter with threshold and then create a fasta instance with appropriate data
-     * @param quanlityThreshold
+     * @param qualityThreshold
      * @param qualitySequence
      * @return
      */
-    public FastaData convertToFasta(int quanlityThreshold, String qualitySequence){
+    public FastaData convertToFasta(int qualityThreshold, String qualitySequence){
+        int score = this.calculateQuality(qualitySequence);
+        if(score >= qualityThreshold) return new FastaData(this.getIdentifier(), this.getSequence());
         return null;
     }
     

@@ -21,4 +21,9 @@ public class Kmers{
         this.setSequence(sequence);
         this.setFrequency(frequency);
     }
+
+    @Override
+    public String toString(){
+        return "{ "+ this.getSequence()+" : "+ this.getFrequency() +" }";
+    }
 }
