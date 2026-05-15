@@ -25,22 +25,21 @@ public class Main {
         }
         System.out.println("Total "+kmers.size());
 
-        // SwingUtilities.invokeLater(() -> {
-        //     JFrame f = new JFrame("K-mers histograme");
-        //     f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        //     f.setSize(800, 500);
-        //     f.add(new UI(kmers));
-        //     f.setLocationRelativeTo(null);
-        //     f.setVisible(true);
-        // });
-
         SwingUtilities.invokeLater(() -> {
-            JFrame f = new JFrame("Analyse de chevauchement");
-            f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            f.setSize(800, 500);
-            f.add(new AlignmentUI());
-            f.setLocationRelativeTo(null);
-            f.setVisible(true);
+            JFrame f1 = new JFrame("Analyse de chevauchement");
+            f1.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            f1.setSize(800, 500);
+            f1.add(new AlignmentUI());
+            f1.setLocationRelativeTo(null);
+            f1.setVisible(true);
+
+
+            JFrame f2 = new JFrame("K-mers histograme");
+            f2.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            f2.setSize(800, 500);
+            f2.add(new UI(kmers));
+            f2.setLocationRelativeTo(null);
+            f2.setVisible(true);
         });
 
     }
