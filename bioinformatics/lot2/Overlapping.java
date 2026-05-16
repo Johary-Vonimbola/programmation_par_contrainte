@@ -41,8 +41,8 @@ public class Overlapping {
     }
 
     public void addPosition(int left, int right){
-        this.getOverlapPositions().add(new OverlapPosition(left, right));
         this.setScore(this.getScore() + 1);
+        this.getOverlapPositions().add(new OverlapPosition(left, right));
     }
 
     public int getRightIndexOf(int i){

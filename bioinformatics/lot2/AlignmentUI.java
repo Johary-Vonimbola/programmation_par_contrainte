@@ -154,24 +154,22 @@ public class AlignmentUI extends JPanel{
                     String left = getOverlapping().getLeft();
                     String right = getOverlapping().getRight();
                     int charW = fm.stringWidth("A"); //the calculation of fm and fontSize are differents
+                    g2.drawString(left, (getWidth() - fm.stringWidth(getLeftValue())) / 2, getHeight() / 3);
+                    g2.drawString(right, (getWidth() - fm.stringWidth(getRightValue())) / 2, getHeight() * 2/3);
+                    int leftX=(getWidth() - fm.stringWidth(getLeftValue())) / 2;
+                    int rightX=(getWidth() - fm.stringWidth(getRightValue())) / 2;
                     if(left.length() >= right.length()){
-                        int x=(getWidth() - fm.stringWidth(getLeftValue())) / 2;
-                        g2.drawString(left, (getWidth() - fm.stringWidth(getLeftValue())) / 2, getHeight() / 3);
                         for(int i=0; i<left.length(); i++){
                             int rightIndex = getOverlapping().getRightIndexOf(i);
                             if(rightIndex >= 0){
-                                g2.drawString(getRightValue().charAt(rightIndex)+"", x + charW * i, getHeight() * 2/3);
-                                g2.drawLine(x + charW * i + charW/2, (getHeight() / 3) + 15, x + charW * i + charW/2, (getHeight() * 2/3) - 40);
+                                g2.drawLine(leftX + charW * i + charW/2, (getHeight() / 3) + 15, rightX + charW * rightIndex + charW/2, (getHeight() * 2/3) - 40);
                             }
                         }
                     }else{
-                        int x=(getWidth() - fm.stringWidth(getRightValue())) / 2;
-                        g2.drawString(right, (getWidth() - fm.stringWidth(getRightValue())) / 2, getHeight() * 2 / 3);
                         for(int i=0; i<right.length(); i++){
                             int leftIndex = getOverlapping().getLeftIndexOf(i);
                             if(leftIndex >= 0){
-                                g2.drawString(getLeftValue().charAt(leftIndex)+"", x + charW * i, getHeight() / 3);
-                                g2.drawLine(x + charW * i + charW/2, (getHeight() / 3) + 15, x + charW * i + charW/2, (getHeight() * 2/3) - 40);
+                                g2.drawLine(leftX + charW * leftIndex + charW/2, (getHeight() / 3) + 15, rightX + charW * i + charW/2, (getHeight() * 2/3) - 40);
                             }
                         }
                     }
