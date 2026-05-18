@@ -15,7 +15,7 @@ public class Main {
     public static void main(String[] args) {
         
         int qualityThreshold = 10;
-        int k = 3;
+        int k = 31;
         String filePath = "./data.fastq";
 
         List<Kmers> kmers = CUtil.generateHistogram(filePath, qualityThreshold, k);
