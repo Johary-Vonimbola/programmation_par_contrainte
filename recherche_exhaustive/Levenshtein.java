@@ -99,7 +99,7 @@ public class Levenshtein {
     } 
 
     public static void main(String[] args){
-        String m = "kanto";
+        String m = "vato";
         int k = 2;
         String alphabet = "abdefghijklmnoprstvyz";
         Set<String> ans = solve(alphabet, m, k);
