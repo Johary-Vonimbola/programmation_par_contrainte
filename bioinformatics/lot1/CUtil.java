@@ -85,6 +85,11 @@ public class CUtil {
     public static List<Kmers> generateHistogram(String filePath, int quanlityThreshold, int k){
         List<FastqData> fastqDatas = readFile(filePath);
         List<FastaData> fastaDatas = fastqToFasta(fastqDatas, quanlityThreshold);
+        System.out.println("---------------FASTA----------------");
+        for(FastaData f : fastaDatas){
+            System.out.println(f.getSequence());;
+        }
+        System.out.println("------------------------------------");
         List<Kmers> kmers = getKmers(fastaDatas, k);
         kmers = getFrequencies(kmers);
         kmers.sort((a, b) -> {

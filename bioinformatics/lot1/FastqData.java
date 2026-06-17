@@ -45,12 +45,12 @@ public class FastqData {
      */
     public int calculateQuality(String qualitySequence){
         int quality = 0;
-        for(int i=0; i<this.getSequence().length(); i++){
-            char c = this.getSequence().charAt(i);
+        for(int i=0; i<this.getQuality().length(); i++){
+            char c = this.getQuality().charAt(i);
             int index = qualitySequence.indexOf(c+"");
             quality += index;
         }
-        return quality / this.getSequence().length();
+        return quality / this.getQuality().length();
     }
 
     /**
