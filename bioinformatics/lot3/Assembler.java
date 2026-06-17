@@ -19,7 +19,7 @@ public class Assembler {
     public static BitSet bloomFilter(List<Kmers> kmers, int m){
         BitSet bits = new BitSet(m);
         int n = kmers.size();
-        int kFunc = (int) (Math.log(2) * (m/(double)n));
+        int kFunc = Math.min(3, (int) (Math.log(2) * (m/(double)n)));
         System.out.println("Number of hash functions :"+kFunc);
         for(Kmers kmer : kmers){
             int i=0;
@@ -62,38 +62,47 @@ public class Assembler {
      * @param dna is by default the seed
      * @return the contig or a "" if for bifurcation
      */
-    public static String onThefly(BitSet bloomFilter, String seed, int kFunc, int m, Set<String> visited){
+    public static String onThefly(BitSet bloomFilter, Set<String> realKmers, String seed, int kFunc, int m, Set<String> visited){
         if(visited.contains(seed)) return "";
         visited.add(seed);
-        String nucleotide = "ATCG";
-        String maybeNeighbor = "";
-        String added="";
-        int count = 0;
-        for(int i=0; i<nucleotide.length(); i++){
-            String checkNeighbor = seed.substring(1, seed.length()) + nucleotide.charAt(i);
-            if(lookup(bloomFilter, checkNeighbor, kFunc, m)){
-                count++;
-                added = nucleotide.charAt(i)+"";
-                maybeNeighbor = checkNeighbor;
+        
+        List<String> neighbors = new ArrayList<>();
+        List<String> addedChars = new ArrayList<>();
+        
+        for(char c : "ATCG".toCharArray()){
+            String checkNeighbor = seed.substring(1) + c;
+            if(lookup(bloomFilter, checkNeighbor, kFunc, m) && realKmers.contains(checkNeighbor)){
+                neighbors.add(checkNeighbor);
+                addedChars.add(c + "");
             }
         }
-        if(count == 1){
-            return added + onThefly(bloomFilter, maybeNeighbor, kFunc, m, visited);
+        
+        if(neighbors.isEmpty()) return "";
+        
+        String best = "";
+        for(int i = 0; i < neighbors.size(); i++){
+            Set<String> branchVisited = new HashSet<>(visited);
+            String candidate = addedChars.get(i) + onThefly(bloomFilter, realKmers, neighbors.get(i), kFunc, m, branchVisited);
+            if(candidate.length() > best.length()) best = candidate;
         }
-        return "";
+        return best;
     }
-
     public static List<String> generateContig(List<Kmers> kmers, int m){
         List<String> contigs = new ArrayList<>();
         BitSet bloomFilter = bloomFilter(kmers, m);
-        int kFunc = (int)(Math.log(2) * (m/(double)kmers.size()));
+        int kFunc = Math.min(3, (int)(Math.log(2) * (m/(double)kmers.size())));
+        
+        Set<String> realKmers = new HashSet<>();
+        for(Kmers kmer : kmers) realKmers.add(kmer.getSequence());
+        
         for(Kmers kmer : kmers){
-            Set<String> visited = new HashSet<>();
-            String dna = kmer.getSequence();
-            dna += onThefly(bloomFilter, kmer.getSequence(), kFunc, m, visited);
-            contigs.add(dna);
+            if(kmer.getFrequency() >= 1){
+                Set<String> visited = new HashSet<>();
+                String dna = kmer.getSequence();
+                dna += onThefly(bloomFilter, realKmers, kmer.getSequence(), kFunc, m, visited);
+                contigs.add(dna);
+            }
         }
         return contigs;
     }
-
 }
