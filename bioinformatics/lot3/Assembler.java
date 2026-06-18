@@ -62,7 +62,7 @@ public class Assembler {
      * @param dna is by default the seed
      * @return the contig or a "" if for bifurcation
      */
-    public static String onThefly(BitSet bloomFilter, Set<String> realKmers, String seed, int kFunc, int m, Set<String> visited){
+    public static String onThefly(BitSet bloomFilter, Set<String> realKmers, String seed, int kFunc, int m, Set<String> visited, List<Kmers> kmers){
         if(visited.contains(seed)) return "";
         visited.add(seed);
         
@@ -82,8 +82,25 @@ public class Assembler {
         String best = "";
         for(int i = 0; i < neighbors.size(); i++){
             Set<String> branchVisited = new HashSet<>(visited);
-            String candidate = addedChars.get(i) + onThefly(bloomFilter, realKmers, neighbors.get(i), kFunc, m, branchVisited);
+            String optimalNeighbord = getOptimalNeighbor(neighbors, kmers);
+            String candidate = addedChars.get(i) + onThefly(bloomFilter, realKmers, optimalNeighbord, kFunc, m, branchVisited, kmers);
             if(candidate.length() > best.length()) best = candidate;
+        }
+        return best;
+    }
+
+    public static String getOptimalNeighbor(List<String> neighbors, List<Kmers> kmers){
+        String best = null;
+        int max = Integer.MIN_VALUE;
+        for(String neighbor : neighbors){
+            for(Kmers kmer : kmers){
+                if(kmer.getSequence().equals(neighbor)){
+                    if(kmer.getFrequency() > max){
+                        best = neighbor;
+                        max = kmer.getFrequency();
+                    }
+                }
+            }
         }
         return best;
     }
@@ -121,7 +138,7 @@ public class Assembler {
             if(kmer.getFrequency() >= 1){
                 Set<String> visited = new HashSet<>();
                 String dna = kmer.getSequence();
-                dna += onThefly(bloomFilter, realKmers, kmer.getSequence(), kFunc, m, visited);
+                dna += onThefly(bloomFilter, realKmers, kmer.getSequence(), kFunc, m, visited, kmers);
                 contigs.add(dna);
             }
         }
