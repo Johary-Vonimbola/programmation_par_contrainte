@@ -15,8 +15,8 @@ public class Main {
     
     public static void main(String[] args) {
         
-        int qualityThreshold = 0;
-        int k = 11;
+        int qualityThreshold = 30;
+        int k = 7;
         String filePath = "./data.fastq";
 
         List<Kmers> kmers = CUtil.generateHistogram(filePath, qualityThreshold, k);
@@ -46,7 +46,7 @@ public class Main {
         int n = kmers.size();
         // double p = 0.01; // 1% of false positive
         // int m = (int) Math.ceil(-(n * Math.log(p)) / (Math.log(2) * Math.log(2)));
-        double p = 0.0001;
+        double p = 0.01;
         int m = (int) Math.ceil(-(n * Math.log(p)) / (Math.log(2) * Math.log(2)));
 
         System.out.println("n = " + n + ", m optimal = " + m);

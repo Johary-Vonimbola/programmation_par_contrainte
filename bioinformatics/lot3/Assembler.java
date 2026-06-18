@@ -19,7 +19,7 @@ public class Assembler {
     public static BitSet bloomFilter(List<Kmers> kmers, int m){
         BitSet bits = new BitSet(m);
         int n = kmers.size();
-        int kFunc = Math.min(3, (int) (Math.log(2) * (m/(double)n)));
+        int kFunc = Math.max(3, (int) (Math.log(2) * (m/(double)n)));
         System.out.println("Number of hash functions :"+kFunc);
         for(Kmers kmer : kmers){
             int i=0;
@@ -87,10 +87,32 @@ public class Assembler {
         }
         return best;
     }
+
+    public static List<String> removeSubContigs(List<String> contigs) {
+        List<String> result = new ArrayList<>();
+
+        for (String c1 : contigs) {
+            boolean isContained = false;
+
+            for (String c2 : contigs) {
+                if (!c1.equals(c2) && c2.contains(c1)) {
+                    isContained = true;
+                    break;
+                }
+            }
+
+            if (!isContained) {
+                result.add(c1);
+            }
+        }
+
+        return result;
+    }
+
     public static List<String> generateContig(List<Kmers> kmers, int m){
         List<String> contigs = new ArrayList<>();
         BitSet bloomFilter = bloomFilter(kmers, m);
-        int kFunc = Math.min(3, (int)(Math.log(2) * (m/(double)kmers.size())));
+        int kFunc = Math.max(3, (int)(Math.log(2) * (m/(double)kmers.size())));
         
         Set<String> realKmers = new HashSet<>();
         for(Kmers kmer : kmers) realKmers.add(kmer.getSequence());
@@ -103,6 +125,7 @@ public class Assembler {
                 contigs.add(dna);
             }
         }
+        contigs = removeSubContigs(contigs);
         return contigs;
     }
 }
