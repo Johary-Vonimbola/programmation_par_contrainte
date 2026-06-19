@@ -1,59 +1,18 @@
-class Constraint{
-    validOps = [">", ">=", "=", "<", "<=", "!="];
+const { ac3 } = require("./utils/Algo");
+const { Variable } = require("./utils/Variable");
+const { Constraint } = require("./utils/Contraints");
 
-    constructor(left, op, right){
-        let i = this.validOps.findIndex(v => v === op);
-        if(i < 0) throw new Error("Invalid operation");
-        this.left = left;
-        this.right = right;
-        this.op = op;
-    }
+let X = new Variable([1,2,3,4]);
+let Y = new Variable([1,2,3,4]);
+let Z = new Variable([1,2,3,4]);
 
-    opEquals(op){
-        return this.op === op;
-    }
+const constraints = [
+    new Constraint(X, ">", Y, x => x, y => y),
+    new Constraint(Y, ">", Z, y => y, z => z)
+];
 
-    isRespected(){
-        if(this.opEquals(">")) return this.left > this.right;
-        if(this.opEquals(">=")) return this.left >= this.right;
-        if(this.opEquals("<")) return this.left < this.right;
-        if(this.opEquals("<=")) return this.left <= this.right;
-        if(this.opEquals("=")) return this.left == this.right;
-        if(this.opEquals("!=")) return this.left != this.right;
-    }
-
-}
-
-class Variable{
-    constructor(val, domain=[]){
-        this.val = val;
-        this.domain = domain;
-    }
-}
-
-const revise = (X, Y, leftFunc, op, rightFunc) => {
-    let revised = false;
-    for(let i=0; i<X.domain.length; i++){
-        let remove = true;
-        for(let j=0; j<Y.domain.length; j++){
-            let l = leftFunc(X.domain[i]);
-            let r = rightFunc(Y.domain[j]);
-            let cst = new Constraint(l, op, r);
-            if(cst.isRespected()) remove = false;
-        }
-        if(remove) {
-            X.domain.splice(i, 1);
-            --i;
-        }
-    }
-    return revised;
-}
-
-let X = new Variable(0, [1,2,3,4]);
-let Y = new Variable(0, [10]);
-
-revise(X, Y, x => x, ">", y => y)
-revise(Y, X, y => y, "<", x => x)
+ac3(constraints);
 
 console.log(X.domain);
 console.log(Y.domain);
+console.log(Z.domain);
