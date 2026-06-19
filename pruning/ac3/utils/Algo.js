@@ -39,9 +39,8 @@ const ac3 = constraints => {
 
     while(!queue.isEmpty()){
         const arc = queue.dequeue();
-        const X = arc.left, Y = arc.right;
         if(revise(arc)){
-            if(X.domain.length == 0) return false;
+            if(arc.left.domain.length == 0) return false;
             arcs.forEach(neighbor => {
                 if(arc.left.id === neighbor.right.id){
                     queue.enqueue(neighbor);
