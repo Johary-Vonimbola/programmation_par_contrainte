@@ -1,6 +1,6 @@
 import { History } from "./History.js";
 
-export const snapshot = (arcs, currentArc, message, queue) => {
+export const snapshot = (arcs, currentArc, message, queue, prevQueue = []) => {
 
     const domains = new Map();
 
@@ -17,11 +17,19 @@ export const snapshot = (arcs, currentArc, message, queue) => {
         });
 
     });
-
+    const queueArray = queue.getItems ? queue.getItems() : queue;
+    const newInQueue = queueArray.filter(q =>
+        !prevQueue.some(p =>
+            p.left.id === q.left.id &&
+            p.right.id === q.right.id &&
+            p.op === q.op
+        )
+    );
     return new History(
-            currentArc,
-            message,
-            domains,
-            queue
-        );
+        currentArc,
+        message,
+        domains,
+        queueArray,   
+        newInQueue
+    );
 };

@@ -39,38 +39,44 @@ export const ac3 = constraints => {
     const arcs = getArcs(constraints);
 
     queue.enqueueMany(arcs);
-    history.push(snapshot(arcs, null, "Initialisation AC-3", queue.getItems()));
-
+    let prevQueue = [...queue.getItems()]; 
+    history.push(snapshot(arcs, null, "Initialisation AC-3", queue.getItems(), prevQueue));
+    prevQueue = [...queue.getItems()];
     while (!queue.isEmpty()) {
         const arc = queue.dequeue();
         const X = arc.left;
         const before = [...X.domain];
         if (revise(arc)) {
             if (X.domain.length === 0) {
-                history.push(snapshot(arcs, arc, `Échec: domaine vide pour ${X.name}`, queue.getItems()));
+                history.push(snapshot(arcs, arc, `Échec: domaine vide pour ${X.name}`, queue.getItems(), prevQueue));
                 return { result: false, history };
             }
             const removed = before.filter(v => !X.domain.includes(v));
-            history.push(snapshot(arcs, 
-                arc,
-                `Révision ${arc.left.name} ${arc.op} ${arc.right.name} | supprimé: [${removed}]`,
-                queue.getItems()
-            ));
+            
             arcs.forEach(neighbor => {
                 if (arc.left.id === neighbor.right.id) {
                     queue.enqueue(neighbor);
                 }
             });
+            history.push(snapshot(arcs, 
+                arc,
+                `Révision ${arc.left.name} ${arc.op} ${arc.right.name} | supprimé: [${removed}]`,
+                queue.getItems(),
+                prevQueue
+            ));
+            prevQueue = [...queue.getItems()];
         } else {
             history.push(snapshot(arcs, 
                 arc,
                 `Aucun changement sur ${arc.left.name}`,
-                queue.getItems()
+                queue.getItems(),
+                prevQueue
             ));
         }
+        prevQueue = [...queue.getItems()];
     }
 
-    history.push(snapshot(arcs, null, "AC-3 terminé"));
+    history.push(snapshot(arcs, null, "AC-3 terminé", queue, prevQueue));
 
     return { result: true, history };
 };

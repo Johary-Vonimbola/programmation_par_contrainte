@@ -137,13 +137,19 @@
 
         state.queue.forEach(q => {
 
+            const isNew = state.newInQueue?.some(n =>
+                n.left.id === q.left.id &&
+                n.right.id === q.right.id &&
+                n.op === q.op
+            );
+
             queueBody.innerHTML += `
-                <tr>
+                <tr style="background:${isNew ? '#22c55e' : 'transparent'}; color:${isNew ? 'white' : '#7c83e8'};">
                     <td>${q.left.name} ${q.op} ${q.right.name}</td>
                 </tr>
             `;
+            
         });
-        
         draw(state);
     }
 
