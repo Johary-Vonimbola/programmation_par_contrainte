@@ -1,5 +1,5 @@
-validOps = [">", ">=", "=", "<", "<=", "!="];
-class Constraint{
+let validOps = [">", ">=", "=", "<", "<=", "!="];
+export class Constraint{
 
     constructor(left, op, right, leftFunc, rightFunc){
         let i = validOps.findIndex(v => v === op);
@@ -25,7 +25,7 @@ class Constraint{
 
 }
 
-class ConstraintVerifier{
+export class ConstraintVerifier{
 
     constructor(leftVal, op, rightVal){
         let i = validOps.findIndex(v => v === op);
@@ -49,9 +49,4 @@ class ConstraintVerifier{
         if(this.opEquals("!=")) return this.left != this.right;
     }
 
-}
-
-module.exports = {
-    Constraint,
-    ConstraintVerifier
 }

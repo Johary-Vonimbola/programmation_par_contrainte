@@ -1,11 +1,8 @@
-class Variable{
+export class Variable{
     static counter = 0;
-    constructor(domain=[]){
+    constructor(domain=[], name="?"){
         this.id = Variable.counter++;
         this.domain = domain;
+        this.name = name;
     }
-}
-
-module.exports = {
-    Variable
 }

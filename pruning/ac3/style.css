@@ -1,0 +1,188 @@
+/* ───────────────────────────────
+   BASE RESET
+────────────────────────────── */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: Inter, system-ui, Arial, sans-serif;
+  background: #0d0f1a;
+  color: #e2e8f0;
+}
+
+/* ───────────────────────────────
+   LAYOUT GLOBAL
+────────────────────────────── */
+body {
+  display: flex;
+  flex-direction: row;
+}
+
+/* ───────────────────────────────
+   PANNEAU LATÉRAL
+────────────────────────────── */
+#side-panel {
+  width: 30%;
+  min-width: 320px;
+  max-width: 420px;
+  height: 100vh;
+  background: #111527;
+  border-right: 1px solid #1e2235;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex-shrink: 0;
+
+  scrollbar-width: thin;
+  scrollbar-color: #2d3148 transparent;
+}
+
+/* scrollbar chrome */
+#side-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+#side-panel::-webkit-scrollbar-thumb {
+  background: #2d3148;
+  border-radius: 10px;
+}
+
+/* ───────────────────────────────
+   SECTIONS
+────────────────────────────── */
+.panel-section {
+  margin: 12px;
+  padding: 14px;
+  background: #0f1324;
+  border: 1px solid #1e2235;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+}
+
+h2 {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4a5080;
+  margin-bottom: 10px;
+}
+
+/* ───────────────────────────────
+   STEP INFO
+────────────────────────────── */
+#step-info {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #94a3b8;
+}
+
+#step-info b {
+  display: block;
+  font-size: 0.8rem;
+  color: #7c83e8;
+  margin-bottom: 4px;
+}
+
+/* ───────────────────────────────
+   CONTROLS
+────────────────────────────── */
+#controls {
+  margin: 12px;
+  display: flex;
+  gap: 10px;
+}
+
+#controls button {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 8px;
+  border: 1px solid #3b3f66;
+  background: linear-gradient(135deg, #2b2f55, #1a1d2e);
+  color: #c7d2fe;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#controls button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(99,102,241,0.25);
+}
+
+#controls button:active {
+  transform: translateY(0px);
+}
+
+/* ───────────────────────────────
+   TABLES
+────────────────────────────── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+thead tr {
+  background: #1a1d2e;
+}
+
+th {
+  padding: 8px 10px;
+  text-align: left;
+  color: #4a5080;
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid #2d3148;
+}
+
+td {
+  padding: 7px 10px;
+  color: #94a3b8;
+  border-bottom: 1px solid #181b2c;
+  transition: background 0.15s ease;
+}
+
+tbody tr:hover td {
+  background: #1a1d2e;
+  color: #e2e8f0;
+}
+
+td:first-child {
+  font-weight: 700;
+  color: #a5b4fc;
+}
+
+/* queue */
+#queue-table td {
+  font-family: "Courier New", monospace;
+  color: #7c83e8;
+}
+
+/* current domain */
+#domain-table td:nth-child(3) {
+  color: #34d399;
+}
+
+/* ───────────────────────────────
+   CANVAS
+────────────────────────────── */
+#canvas {
+  flex: 1;
+  height: 100vh;
+  display: block;
+  background: radial-gradient(
+    circle at center,
+    #11162a 0%,
+    #0b0d18 60%,
+    #070812 100%
+  );
+}

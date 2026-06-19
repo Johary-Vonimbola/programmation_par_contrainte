@@ -1,6 +1,6 @@
-const { ac3 } = require("./utils/Algo");
-const { Variable } = require("./utils/Variable");
-const { Constraint } = require("./utils/Contraints");
+import { ac3 } from "./utils/Algo.js";
+import { Variable } from "./utils/Variable.js";
+import { Constraint } from "./utils/Constraints.js";
 
 let X = new Variable([1,2,3,4]);
 let Y = new Variable([1,2,3,4]);

@@ -1,7 +1,8 @@
-const { ConstraintVerifier } = require("./Contraints");
-const { Queue } = require("./Queue");
+import { ConstraintVerifier } from "./Constraints.js";
+import { Queue } from "./Queue.js";
+import { snapshot } from "../visualizer/Snapshot.js";
 
-const revise = cst => {
+export const revise = cst => {
     let revised = false;
     const X = cst.left, Y = cst.right;
     const leftFunc = cst.leftFunc, rightFunc = cst.rightFunc;
@@ -23,7 +24,7 @@ const revise = cst => {
     return revised;
 }
 
-const getArcs = (csts = []) => {
+export const getArcs = (csts = []) => {
     let arcs = [];
     csts.forEach(cst => {
         arcs.push(cst);
@@ -32,27 +33,44 @@ const getArcs = (csts = []) => {
     return arcs;
 }
 
-const ac3 = constraints => {
+export const ac3 = constraints => {
+    const history = [];
     const queue = new Queue();
     const arcs = getArcs(constraints);
-    queue.enqueueMany(arcs);
 
-    while(!queue.isEmpty()){
+    queue.enqueueMany(arcs);
+    history.push(snapshot(arcs, null, "Initialisation AC-3", queue.getItems()));
+
+    while (!queue.isEmpty()) {
         const arc = queue.dequeue();
-        if(revise(arc)){
-            if(arc.left.domain.length == 0) return false;
+        const X = arc.left;
+        const before = [...X.domain];
+        if (revise(arc)) {
+            if (X.domain.length === 0) {
+                history.push(snapshot(arcs, arc, `Échec: domaine vide pour ${X.name}`, queue.getItems()));
+                return { result: false, history };
+            }
+            const removed = before.filter(v => !X.domain.includes(v));
+            history.push(snapshot(arcs, 
+                arc,
+                `Révision ${arc.left.name} ${arc.op} ${arc.right.name} | supprimé: [${removed}]`,
+                queue.getItems()
+            ));
             arcs.forEach(neighbor => {
-                if(arc.left.id === neighbor.right.id){
+                if (arc.left.id === neighbor.right.id) {
                     queue.enqueue(neighbor);
                 }
             });
+        } else {
+            history.push(snapshot(arcs, 
+                arc,
+                `Aucun changement sur ${arc.left.name}`,
+                queue.getItems()
+            ));
         }
     }
-    return true;
-}
 
-module.exports = {
-    revise,
-    getArcs,
-    ac3
-}
+    history.push(snapshot(arcs, null, "AC-3 terminé"));
+
+    return { result: true, history };
+};

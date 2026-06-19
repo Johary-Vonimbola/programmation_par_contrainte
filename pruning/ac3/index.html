@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>AC-3 Visualiseur</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 500;
+      color: #a0aec0;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    #info-box {
+      background: #1a1d2e;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    #arc-label {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #7c83e8;
+      margin-bottom: 4px;
+    }
+    #action-label {
+      font-size: 0.875rem;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .nav button {
+      padding: 7px 20px;
+      border-radius: 8px;
+      border: 1px solid #2d3148;
+      background: #1a1d2e;
+      color: #e2e8f0;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .nav button:hover:not(:disabled) { background: #2d3148; }
+    .nav button:disabled { opacity: 0.35; cursor: default; }
+    #step-label { font-size: 0.8rem; color: #64748b; }
+    #canvas {
+      width: 100%;
+      display: block;
+      background: #1a1d2e;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+    }
+    #domain-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    #domain-table th {
+      text-align: left;
+      padding: 8px 12px;
+      color: #64748b;
+      border-bottom: 1px solid #2d3148;
+      font-weight: 500;
+    }
+    #domain-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #1e2235;
+      color: #e2e8f0;
+    }
+    .domain-cell { display: flex; gap: 6px; flex-wrap: wrap; }
+    .val-badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 5px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      background: #2d3148;
+      color: #94a3b8;
+      transition: background 0.3s, color 0.3s;
+    }
+    .val-badge.active  { background: #3b4290; color: #a5b4fc; }
+    .val-badge.removed { background: #3d1a1a; color: #f87171; text-decoration: line-through; }
+    #loading { color: #64748b; font-size: 0.875rem; padding: 1rem 0; }
+  </style>
+</head>
+<body>
+
+<h1>AC-3 — Propagation de contraintes</h1>
+
+<div id="info-box">
+  <div id="arc-label">—</div>
+  <div id="action-label" id="loading">Chargement des modules...</div>
+</div>
+
+<div class="nav">
+  <button id="btn-prev" onclick="navigate(-1)" disabled>← Précédent</button>
+  <span id="step-label">Étape 0 / 0</span>
+  <button id="btn-next" onclick="navigate(1)" disabled>Suivant →</button>
+</div>
+
+<svg id="canvas" viewBox="0 0 700 260"></svg>
+
+<table id="domain-table">
+  <thead>
+    <tr>
+      <th>Variable</th>
+      <th>Valeurs initiales</th>
+      <th>Domaine courant</th>
+    </tr>
+  </thead>
+  <tbody id="domain-tbody"></tbody>
+</table>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// SYSTÈME DE MODULES MAISON
+//
+// Le navigateur ne comprend pas require() / module.exports (c'est du Node.js).
+// On recrée un mini-système de modules :
+//
+//   loadModule(path)
+//     → fetch() le fichier JS sous forme de texte
+//     → l'enveloppe dans une fonction : (function(module, exports, require) { ...code... })
+//     → appelle cette fonction avec notre propre objet "module"
+//     → stocke module.exports dans _registry[path]
+//
+//   require(path)
+//     → retourne _registry[path]
+//
+// L'astuce clé : new Function(...) crée un scope isolé.
+// Les "const" et "class" à l'intérieur ne pollue pas le scope global.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const _registry = {};
+
+function require(path) {
+  // Normalise le chemin : "./Contraints" → "Contraints"
+  const key = path.replace(/^\.\//, "");
+  if (!_registry[key]) throw new Error("Module non chargé : " + key);
+  return _registry[key];
+}
+
+async function loadModule(filePath) {
+  // Clé = nom sans chemin ni extension, ex: "utils/Contraints.js" → "Contraints"
+  const key = filePath.split("/").pop().replace(".js", "");
+
+  const response = await fetch(filePath);
+  if (!response.ok) throw new Error("Impossible de charger : " + filePath);
+  const code = await response.text();
+
+  // On enveloppe le code du fichier dans une fonction qui reçoit
+  // module, exports et require comme paramètres locaux.
+  // Ainsi, "const Constraint = ..." reste local à cette fonction.
+  const moduleObj = { exports: {} };
+  const factory = new Function("module", "exports", "require", code);
+  factory(moduleObj, moduleObj.exports, require);
+
+  _registry[key] = moduleObj.exports;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CHARGEMENT SÉQUENTIEL DES MODULES (ordre des dépendances)
+// puis lancement de la visualisation
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function main() {
+  try {
+    // Ordre important : charger les dépendances avant ceux qui les utilisent
+    await loadModule("utils/Queue.js");
+    await loadModule("utils/Variable.js");
+    await loadModule("utils/Contraints.js");
+    await loadModule("utils/Algo.js");
+  } catch(e) {
+    document.getElementById("action-label").textContent = "Erreur : " + e.message;
+    return;
+  }
+
+  // Maintenant que tout est chargé, on peut utiliser require()
+  const { Variable }   = require("Variable");
+  const { Constraint } = require("Contraints");
+  const { ac3 }        = require("Algo");
+
+  // ── Instanciation des variables (nom en 2e argument) ──
+  const X = new Variable([1,2,3], "X");
+  const Y = new Variable([1,2,3], "Y");
+  const Z = new Variable([1,2,3], "Z");
+  const A = new Variable([1,2,4 , 3], "A");
+  const B = new Variable([1,2,3, 12], "B");
+
+  const constraints = [
+    new Constraint(X, ">", Y, x => x, y => y),
+    new Constraint(Y, "=", Z, y => y, z => z),
+    new Constraint(A, ">=", B, y => y, z => z),
+    new Constraint(B, "<", X, y => y, z => z),
+  ];
+
+  // ac3() retourne { result, history }
+  const { result, history } = ac3(constraints);
+
+  // ── Configuration des positions des nœuds dans le SVG ──
+  const nodePositions = {
+    [X.id]: { x: 140, y: 80, name: "X" },
+    [Y.id]: { x: 350, y: 80, name: "Y" },
+    [Z.id]: { x: 560, y: 80, name: "Z" },
+    [A.id]: { x: 360, y: 200, name: "A" },
+    [B.id]: { x: 260, y: 200, name: "B" },
+  };
+
+  // Arcs à dessiner (aller + retour séparés visuellement)
+  const edges = [
+    { source: X.id, target: Y.id, label: ">" },
+    { source: Y.id, target: X.id, label: "<" },
+    { source: Y.id, target: Z.id, label: ">" },
+    { source: Z.id, target: Y.id, label: "<" },
+    { source: A.id, target: B.id, label: ">=" },
+    { source: B.id, target: X.id, label: "<" },
+  ];
+
+  const R = 44; // rayon des cercles
+
+  // ── Construction du SVG avec D3 ──────────────────────────────────────────
+
+  const svg = d3.select("#canvas");
+
+  // Marqueur de flèche réutilisable
+  svg.append("defs").append("marker")
+    .attr("id", "arrow")
+    .attr("viewBox", "0 0 10 10")
+    .attr("refX", 8).attr("refY", 5)
+    .attr("markerWidth", 6).attr("markerHeight", 6)
+    .attr("orient", "auto-start-reverse")
+    .append("path")
+      .attr("d", "M2 1L8 5L2 9")
+      .attr("fill", "none")
+      .attr("stroke", "#4a5080")
+      .attr("stroke-width", 1.5);
+
+  // Dessin des arêtes
+  // Pour chaque arête aller/retour, on décale perpendiculairement
+  // pour qu'elles ne se superposent pas
+  const edgeGroups = svg.selectAll("g.edge")
+    .data(edges)
+    .enter()
+    .append("g").attr("class", "edge");
+
+  edgeGroups.append("line")
+    .attr("class", "edge-line")
+    .attr("stroke", "#2d3148")
+    .attr("stroke-width", 1.5)
+    .attr("marker-end", "url(#arrow)")
+    .each(function(d) {
+      const s = nodePositions[d.source];
+      const t = nodePositions[d.target];
+      const dx = t.x - s.x, dy = t.y - s.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const ux = dx/dist, uy = dy/dist;
+      // Décalage perpendiculaire pour séparer aller et retour
+      const offset = 22;
+      const perpX = -uy * offset, perpY = ux * offset;
+      d._perpX = perpX; d._perpY = perpY;
+
+      d3.select(this)
+        .attr("x1", s.x + ux * R + perpX)
+        .attr("y1", s.y + uy * R + perpY)
+        .attr("x2", t.x - ux * (R + 8) + perpX)
+        .attr("y2", t.y - uy * (R + 8) + perpY);
+    });
+
+  // Label opérateur sur chaque arête
+  edgeGroups.append("text")
+    .attr("class", "edge-label")
+    .attr("text-anchor", "middle")
+    .attr("font-size", 13)
+    .attr("fill", "#4a5080")
+    .attr("dy", -6)
+    .each(function(d) {
+      const s = nodePositions[d.source];
+      const t = nodePositions[d.target];
+      d3.select(this)
+        .attr("x", (s.x + t.x) / 2 + (d._perpX || 0))
+        .attr("y", (s.y + t.y) / 2 + (d._perpY || 0))
+        .text(d.label);
+    });
+
+  // Dessin des nœuds
+  // Chaque nœud = groupe <g> contenant cercle + nom + domaine
+  const nodeGroups = svg.selectAll("g.node")
+    .data(Object.values(nodePositions))
+    .enter()
+    .append("g")
+      .attr("class", "node")
+      .attr("transform", d => `translate(${d.x},${d.y})`);
+
+  nodeGroups.append("circle")
+    .attr("r", R)
+    .attr("fill", "#1a1d2e")
+    .attr("stroke", "#3b4290")
+    .attr("stroke-width", 1.5);
+
+  nodeGroups.append("text")
+    .attr("text-anchor", "middle")
+    .attr("dominant-baseline", "central")
+    .attr("dy", "-10px")
+    .attr("font-size", 20)
+    .attr("font-weight", 600)
+    .attr("fill", "#a5b4fc")
+    .text(d => d.name);
+
+  // Ce texte sera mis à jour à chaque étape
+  nodeGroups.append("text")
+    .attr("class", "domain-label")
+    .attr("text-anchor", "middle")
+    .attr("dominant-baseline", "central")
+    .attr("dy", "14px")
+    .attr("font-size", 11)
+    .attr("fill", "#64748b")
+    .text("…");
+
+  // ── Rendu d'une étape ─────────────────────────────────────────────────────
+
+  let currentStep = 0;
+
+  function render(stepIndex) {
+    const step = history[stepIndex];
+
+    document.getElementById("arc-label").textContent    = "Arc : " + step.arcLabel;
+    document.getElementById("action-label").textContent = step.action;
+    document.getElementById("step-label").textContent   =
+      `Étape ${stepIndex} / ${history.length - 1}`;
+
+    // Met à jour le domaine affiché dans chaque cercle
+    svg.selectAll("text.domain-label")
+      .text(function(d) {
+        const entry = Object.values(step.domains).find(e => e.name === d.name);
+        return entry ? `{${entry.domain.join(",")}}` : "";
+      });
+
+    // Colorie les cercles : rouge si domaine réduit, vert si terminé
+    svg.selectAll("g.node circle")
+      .data(Object.values(nodePositions))
+      .transition().duration(250)
+      .attr("stroke", function(d) {
+        const id = Object.keys(nodePositions).find(k => nodePositions[k].name === d.name);
+        if (String(id) === String(step.removedVar)) return "#ef4444";
+        if (stepIndex === history.length - 1)        return "#1D9E75";
+        return "#3b4290";
+      })
+      .attr("stroke-width", function(d) {
+        const id = Object.keys(nodePositions).find(k => nodePositions[k].name === d.name);
+        return String(id) === String(step.removedVar) || stepIndex === history.length - 1
+          ? 2.5 : 1.5;
+      });
+
+    // Met en évidence l'arc actif
+    svg.selectAll("line.edge-line")
+      .data(edges)
+      .transition().duration(250)
+      .attr("stroke", function(d) {
+        const sName = nodePositions[d.source].name;
+        const tName = nodePositions[d.target].name;
+        return `${sName} ${d.label} ${tName}` === step.arcLabel ? "#7c83e8" : "#2d3148";
+      })
+      .attr("stroke-width", function(d) {
+        const sName = nodePositions[d.source].name;
+        const tName = nodePositions[d.target].name;
+        return `${sName} ${d.label} ${tName}` === step.arcLabel ? 2.5 : 1.5;
+      });
+
+    // Tableau des domaines
+    const initDomains = history[0].domains;
+    const tbody = document.getElementById("domain-tbody");
+    tbody.innerHTML = "";
+
+    Object.values(step.domains).forEach(entry => {
+      const initVals = Object.values(initDomains).find(e => e.name === entry.name)?.domain || [];
+      const tr = document.createElement("tr");
+
+      const tdName = document.createElement("td");
+      tdName.textContent = entry.name;
+      tdName.style.cssText = "font-weight:600; color:#a5b4fc;";
+      tr.appendChild(tdName);
+
+      // Colonne valeurs initiales
+      const tdInit = document.createElement("td");
+      const initCell = document.createElement("div");
+      initCell.className = "domain-cell";
+      initVals.forEach(v => {
+        const b = document.createElement("span");
+        b.className = "val-badge active";
+        b.textContent = v;
+        initCell.appendChild(b);
+      });
+      tdInit.appendChild(initCell);
+      tr.appendChild(tdInit);
+
+      // Colonne domaine courant (valeurs retirées barrées)
+      const tdCurr = document.createElement("td");
+      const currCell = document.createElement("div");
+      currCell.className = "domain-cell";
+      initVals.forEach(v => {
+        const b = document.createElement("span");
+        b.className = "val-badge " + (entry.domain.includes(v) ? "active" : "removed");
+        b.textContent = v;
+        currCell.appendChild(b);
+      });
+      tdCurr.appendChild(currCell);
+      tr.appendChild(tdCurr);
+
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById("btn-prev").disabled = (stepIndex === 0);
+    document.getElementById("btn-next").disabled = (stepIndex === history.length - 1);
+  }
+
+  window.navigate = function(dir) {
+    currentStep = Math.max(0, Math.min(history.length - 1, currentStep + dir));
+    render(currentStep);
+  };
+
+  render(0);
+}
+
+main();
+</script>
+</body>
+</html>

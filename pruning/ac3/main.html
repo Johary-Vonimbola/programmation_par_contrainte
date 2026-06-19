@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AC3 Visualizer</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+
+<div id="side-panel">
+    <div class="panel-section">
+        <h2>AC-3 Variables</h2>
+        <div id="step-info"></div>
+    </div>
+
+    <div id="controls">
+        <button id="prev">Prev</button>
+        <button id="next">Next</button>
+    </div>
+
+    <div class="panel-section">
+        <h2>Evolution de domaine</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Var</th>
+                    <th>Initial</th>
+                    <th>Current</th>
+                </tr>
+            </thead>
+            <tbody id="domain-table"></tbody>
+        </table>
+    </div>
+
+    <div class="panel-section">
+        <h2>File d'attente</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Queue</th>
+                </tr>
+            </thead>
+            <tbody id="queue-table"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script type="module">
+
+    import { Variable } from "./utils/Variable.js";
+    import { Vector } from "./visualizer/Vector.js";
+    import { Node } from "./visualizer/Node.js";
+    import { Constraint } from "./utils/Constraints.js";
+    import { Edge } from "./visualizer/Edge.js";
+    import { ac3 } from "./utils/Algo.js";
+
+
+    const canvas = document.getElementById("canvas");
+    const context = canvas.getContext("2d");
+
+    const colorGlobal = {
+        currentNodeColor: "red",
+        textColor: "black",
+        normal: "aqua"
+    };
+
+    window.context = context;
+    window.colorGlobal = colorGlobal;
+
+    function resize(){
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+
+    const x = new Variable([1, 2, 3], "X");
+    const y = new Variable([1, 2, 3], "Y");
+    const z = new Variable([1, 2, 3], "Z");
+
+    const variables = [x,y,z];
+
+    variables.forEach(v => v.initial = [...v.domain]);
+
+    const nodeX = new Node({ variable:x, position:new Vector(200,200) });
+    const nodeY = new Node({ variable:y, position:new Vector(500,200), couple:nodeX });
+    const nodeZ = new Node({ variable:z, position:new Vector(350,450), couple:nodeY });
+
+    const nodes = [nodeX,nodeY,nodeZ];
+    const edges = [
+        new Edge(nodeX, nodeY),
+        new Edge(nodeY, nodeX),
+        new Edge(nodeY, nodeZ),
+        new Edge(nodeZ, nodeY) 
+    ];
+
+    const constraints = [
+        new Constraint(x, ">", y, x => x, y => y),
+        new Constraint(y, "=", z, y => y, z => z)
+    ];
+
+    const result = ac3(constraints);
+    const history = result.history;
+
+    let index = 0;
+
+
+    function render(){
+        const state = history[index];
+
+        document.getElementById("step-info").innerHTML =
+            `<b>Step ${index+1}/${history.length}</b><br>${state.message}`;
+
+        const tbody = document.getElementById("domain-table");
+        tbody.innerHTML = "";
+
+        state.domains.forEach(v => {
+            const original = variables.find(x => x.name === v.name).initial;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${v.name}</td>
+                    <td>{${original.join(", ")}}</td>
+                    <td>{${v.domain.join(", ")}}</td>
+                </tr>
+            `;
+        });
+
+        const queueBody = document.getElementById("queue-table");
+        queueBody.innerHTML = "";
+
+        state.queue.forEach(q => {
+
+            queueBody.innerHTML += `
+                <tr>
+                    <td>${q.left.name} ${q.op} ${q.right.name}</td>
+                </tr>
+            `;
+        });
+        
+        draw(state);
+    }
+
+
+    function draw(state){
+
+        context.clearRect(0,0,canvas.width,canvas.height);
+        edges.forEach(e => {
+            let active =
+                state.arc &&
+                (
+                    (e.from.variable.name === state.arc.left?.name &&
+                    e.to.variable.name === state.arc.right?.name)
+                );
+
+            e.draw(context, active);
+        });
+        nodes.forEach(node => {
+
+            if(state.arc &&
+            (node.variable.name === state.arc.left?.name ||
+                node.variable.name === state.arc.right?.name)){
+                    node.color = colorGlobal.currentNodeColor;
+                    node.domainStep = state.domains.get(node.variable.name).domain;
+            }else{
+                node.color = colorGlobal.normal;
+            }
+
+            node.update();
+        });
+    }
+
+
+    document.getElementById("next").onclick = () => {
+        if(index < history.length - 1){
+            index++;
+            render();
+        }
+    };
+
+    document.getElementById("prev").onclick = () => {
+        if(index > 0){
+            index--;
+            render();
+        }
+    };
+
+    render();
+
+</script>
+
+</body>
+</html>
